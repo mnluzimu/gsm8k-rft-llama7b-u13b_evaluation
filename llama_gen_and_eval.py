@@ -9,11 +9,11 @@ from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer
 
 
 def main(
-    gsm8k_test_jsonl: str = "gsm8k_test.jsonl",
+    gsm8k_test_jsonl: str = "/mnt/cache/luzimu/datasets_ch/ceval/outs/test/gsm8k_rft_test.jsonl",
     model_path: str = "OFA-Sys/gsm8k-rft-llama7b-u13b",
     is_bf16: bool = False,
     batch_size: int = 32,
-    save_dir: str | None = None,
+    save_dir: str | None = "/mnt/cache/luzimu/datasets_ch/ceval/outs/results",
 ):
     print(f"main start, is_bf16:{is_bf16}, batch_size:{batch_size}")
     with open(gsm8k_test_jsonl, "r") as f:
@@ -41,6 +41,7 @@ def main(
             zip(cur_gsm8k_batch, input_str_list, output_str_list)
         ):
             with open(gen_datas_jsonl, "a") as f:
+                print("saving...")
                 json.dump(
                     dict(
                         index=i + j,
@@ -49,36 +50,37 @@ def main(
                         output_str=output_str,
                     ),
                     f,
+                    ensure_ascii=False
                 )
                 f.write("\n")
 
     # calculate acc
-    with open(gen_datas_jsonl) as f:
-        gen_datas = [json.loads(line) for line in f]
+    # with open(gen_datas_jsonl) as f:
+    #     gen_datas = [json.loads(line) for line in f]
 
-    correct_results = []
-    wrong_results = []
-    for gen in gen_datas:
-        result = dict(
-            **gen,
-            extract_true_num=extract_last_num(gen["gsm8k_data"]["answer"]),
-            extract_pred_num=extract_last_num(gen["output_str"]),
-            is_correct=None,
-        )
-        if abs(result["extract_true_num"] - result["extract_pred_num"]) < 1e-3:
-            result["is_correct"] = True
-            correct_results.append(result)
-        else:
-            result["is_correct"] = False
-            wrong_results.append(result)
+    # correct_results = []
+    # wrong_results = []
+    # for gen in gen_datas:
+    #     result = dict(
+    #         **gen,
+    #         extract_true_num=extract_last_num(gen["gsm8k_data"]["answer"]),
+    #         extract_pred_num=extract_last_num(gen["output_str"]),
+    #         is_correct=None,
+    #     )
+    #     if abs(result["extract_true_num"] - result["extract_pred_num"]) < 1e-3:
+    #         result["is_correct"] = True
+    #         correct_results.append(result)
+    #     else:
+    #         result["is_correct"] = False
+    #         wrong_results.append(result)
 
-    with open(Path(save_dir) / "correct.json", "w") as f:
-        json.dump(correct_results, f, ensure_ascii=False, indent=4)
-    with open(Path(save_dir) / "wrong.json", "w") as f:
-        json.dump(wrong_results, f, ensure_ascii=False, indent=4)
+    # with open(Path(save_dir) / "correct.json", "w") as f:
+    #     json.dump(correct_results, f, ensure_ascii=False, indent=4)
+    # with open(Path(save_dir) / "wrong.json", "w") as f:
+    #     json.dump(wrong_results, f, ensure_ascii=False, indent=4)
 
-    result = f"Accuracy={len(correct_results)}/({len(correct_results)}+{len(wrong_results)})={len(correct_results)/(len(correct_results) + len(wrong_results))}"
-    print(result)
+    # result = f"Accuracy={len(correct_results)}/({len(correct_results)}+{len(wrong_results)})={len(correct_results)/(len(correct_results) + len(wrong_results))}"
+    # print(result)
 
 
 def gsm8k_batch_gen(
